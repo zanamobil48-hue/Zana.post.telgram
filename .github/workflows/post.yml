@@ -1,0 +1,22 @@
+name: Zana Auto Post
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+    - cron: '0 15 * * *'
+    - cron: '0 16 * * *'
+    - cron: '0 17 * * *'
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - run: pip install pillow gspread google-auth python-telegram-bot arabic-reshaper python-bidi
+      - run: python bot.py
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          GOOGLE_CREDS: ${{ secrets.GOOGLE_CREDS }}
