@@ -1,10 +1,10 @@
-import asyncio, os, gspread
+import asyncio, os, gspread, json
 from PIL import Image, ImageDraw, ImageFont
 from telegram import Bot
 from google.oauth2.service_account import Credentials
-import json
 
-TELEGRAM_TOKEN = os.environ['8621239974:AAGJNDusfecacpoy_6O0tTtExOgw44cc7vk']
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
+GOOGLE_CREDS = os.environ.get('GOOGLE_CREDS', '')
 CHANNEL_ID = '@zanamobile1'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
@@ -46,30 +46,29 @@ def create_image(phone, price_raw, out_path):
     return price
 
 async def main():
-    # گۆگل شەیت
-    creds_json = json.loads(os.environ['GOOGLE_CREDS'])
+    creds_json = json.loads(GOOGLE_CREDS)
     creds = Credentials.from_service_account_info(creds_json,
-        scopes=['https://www.googleapis.com/auth/spreadsheets.readonly'])
+        scopes=['https://www.googleapis.com/auth/spreadsheets.readonly',
+                'https://www.googleapis.com/auth/drive.readonly'])
     gc = gspread.authorize(creds)
     sheet = gc.open_by_key(SHEET_ID).sheet1
     data = sheet.get_all_values()
 
-    # ژمارەی پۆستی ئەمڕۆ لە environment
-    post_num = int(os.environ.get('POST_NUM', '1'))
-    
     bot = Bot(token=TELEGRAM_TOKEN)
     count = 0
     for row in data:
         phone = row[0].strip()
         price = row[1].strip()
         if phone and price and phone != 'نۆرمال':
+            out = f'post_{count+1}.jpg'
+            fmt = create_image(phone, price, out)
+            with open(out, 'rb') as f:
+                await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
+            print(f'✅ [{count+1}] {phone} | {fmt}')
             count += 1
-            if count == post_num:
-                out = f'post_{post_num}.jpg'
-                fmt = create_image(phone, price, out)
-                with open(out, 'rb') as f:
-                    await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
-                print(f'✅ پۆست {post_num}: {phone} | {fmt}')
+            await asyncio.sleep(3)
+            if count >= 4:
                 break
+    print(f'🎉 {count} پۆست نێردرا!')
 
 asyncio.run(main())
