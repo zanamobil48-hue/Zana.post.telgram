@@ -5,7 +5,7 @@ from google.oauth2.service_account import Credentials
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
 GOOGLE_CREDS = os.environ.get('GOOGLE_CREDS', '')
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+PAT_TOKEN = os.environ.get('PAT_TOKEN', '')
 REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanamobile1'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
@@ -14,15 +14,15 @@ BOT_BOX = (1285, 2740, 2161, 3080)
 
 def get_last_row():
     url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
-    headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+    headers = {'Authorization': f'token {PAT_TOKEN}'}
     r = requests.get(url, headers=headers)
     if r.status_code == 200:
-        return int(r.json().get('value', '1'))
-    return 1
+        return int(r.json().get('value', '0'))
+    return 0
 
 def set_last_row(row):
     url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
-    headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+    headers = {'Authorization': f'token {PAT_TOKEN}'}
     requests.patch(url, headers=headers, json={'value': str(row)})
 
 def format_price(raw):
@@ -49,15 +49,10 @@ def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=600)
 def create_image(phone, price_raw, out_path):
     img = Image.open('background.jpg').copy()
     draw = ImageDraw.Draw(img)
-    price = format_price(price_raw)
     cx1=(TOP_BOX[0]+TOP_BOX[2])//2; cy1=(TOP_BOX[1]+TOP_BOX[3])//2
     draw_centered(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
         TOP_BOX[2]-TOP_BOX[0]-100, TOP_BOX[3]-TOP_BOX[1]-60, '#CC0000', 600)
-    cx2=(BOT_BOX[0]+BOT_BOX[2])//2; cy2=(BOT_BOX[1]+BOT_BOX[3])//2
-    draw_centered(draw, price, 'NRT-Bd.ttf', cx2, cy2,
-        BOT_BOX[2]-BOT_BOX[0]-60, BOT_BOX[3]-BOT_BOX[1]-40, '#CC0000', 350)
     img.resize((1080,1080), Image.LANCZOS).save(out_path, 'JPEG', quality=92)
-    return price
 
 async def main():
     creds_json = json.loads(GOOGLE_CREDS)
@@ -68,25 +63,22 @@ async def main():
     sheet = gc.open_by_key(SHEET_ID).sheet1
     data = sheet.get_all_values()
 
-    # داتای ڕاستەقینە وەربگرە
     rows = [(r[0].strip(), r[1].strip()) for r in data
             if r[0].strip() and r[1].strip() and r[0].strip() != 'نۆرمال']
 
     last = get_last_row()
+    if last >= len(rows):
+        last = 0
+
+    phone, price = rows[last]
+    out = 'post.jpg'
+    create_image(phone, price, out)
+
     bot = Bot(token=TELEGRAM_TOKEN)
-    count = 0
+    with open(out, 'rb') as f:
+        await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
 
-    for i in range(last, min(last + 4, len(rows))):
-        phone, price = rows[i]
-        out = f'post_{i}.jpg'
-        fmt = create_image(phone, price, out)
-        with open(out, 'rb') as f:
-            await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
-        print(f'✅ {phone} | {fmt}')
-        count += 1
-        await asyncio.sleep(3)
-
-    set_last_row(last + count)
-    print(f'🎉 {count} پۆست نێردرا! داهاتوو لە {last+count} دەستپێدەکات')
+    set_last_row(last + 1)
+    print(f'✅ {phone} | پۆست {last+1} لە {len(rows)}')
 
 asyncio.run(main())
