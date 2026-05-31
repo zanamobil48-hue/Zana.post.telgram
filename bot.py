@@ -1,15 +1,29 @@
-import asyncio, os, gspread, json
+import asyncio, os, gspread, json, requests
 from PIL import Image, ImageDraw, ImageFont
 from telegram import Bot
 from google.oauth2.service_account import Credentials
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
 GOOGLE_CREDS = os.environ.get('GOOGLE_CREDS', '')
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
+REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanamobile1'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
-
 TOP_BOX = (247, 467, 3205, 1109)
 BOT_BOX = (1285, 2740, 2161, 3080)
+
+def get_last_row():
+    url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
+    headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+    r = requests.get(url, headers=headers)
+    if r.status_code == 200:
+        return int(r.json().get('value', '1'))
+    return 1
+
+def set_last_row(row):
+    url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
+    headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+    requests.patch(url, headers=headers, json={'value': str(row)})
 
 def format_price(raw):
     s = str(raw).strip().replace(',','').replace('،','').replace(' ','')
@@ -54,21 +68,25 @@ async def main():
     sheet = gc.open_by_key(SHEET_ID).sheet1
     data = sheet.get_all_values()
 
+    # داتای ڕاستەقینە وەربگرە
+    rows = [(r[0].strip(), r[1].strip()) for r in data
+            if r[0].strip() and r[1].strip() and r[0].strip() != 'نۆرمال']
+
+    last = get_last_row()
     bot = Bot(token=TELEGRAM_TOKEN)
     count = 0
-    for row in data:
-        phone = row[0].strip()
-        price = row[1].strip()
-        if phone and price and phone != 'نۆرمال':
-            out = f'post_{count+1}.jpg'
-            fmt = create_image(phone, price, out)
-            with open(out, 'rb') as f:
-                await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
-            print(f'✅ [{count+1}] {phone} | {fmt}')
-            count += 1
-            await asyncio.sleep(3)
-            if count >= 4:
-                break
-    print(f'🎉 {count} پۆست نێردرا!')
+
+    for i in range(last, min(last + 4, len(rows))):
+        phone, price = rows[i]
+        out = f'post_{i}.jpg'
+        fmt = create_image(phone, price, out)
+        with open(out, 'rb') as f:
+            await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
+        print(f'✅ {phone} | {fmt}')
+        count += 1
+        await asyncio.sleep(3)
+
+    set_last_row(last + count)
+    print(f'🎉 {count} پۆست نێردرا! داهاتوو لە {last+count} دەستپێدەکات')
 
 asyncio.run(main())
