@@ -1,6 +1,5 @@
-import asyncio, os, gspread, json, requests
+import os, gspread, json, requests, telegram
 from PIL import Image, ImageDraw, ImageFont
-from telegram import Bot
 from google.oauth2.service_account import Credentials
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
@@ -37,15 +36,28 @@ def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=600)
             return size
     return 0
 
+def format_price(raw):
+    s = str(raw).strip().replace(',','').replace('،','').replace(' ','')
+    s = s.replace('هەزار','').replace('هزار','')
+    try:
+        n = float(s)
+        if n < 1000: n *= 1000
+        return f'{int(n // 1000)} هەزار'
+    except: return str(raw)
+
 def create_image(phone, price_raw, out_path):
     img = Image.open('background.jpg').copy()
     draw = ImageDraw.Draw(img)
+    price = format_price(price_raw)
     cx1=(TOP_BOX[0]+TOP_BOX[2])//2; cy1=(TOP_BOX[1]+TOP_BOX[3])//2
     draw_centered(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
         TOP_BOX[2]-TOP_BOX[0]-100, TOP_BOX[3]-TOP_BOX[1]-60, '#CC0000', 600)
+    cx2=(BOT_BOX[0]+BOT_BOX[2])//2; cy2=(BOT_BOX[1]+BOT_BOX[3])//2
+    draw_centered(draw, price, 'NRT-Bd.ttf', cx2, cy2,
+        BOT_BOX[2]-BOT_BOX[0]-60, BOT_BOX[3]-BOT_BOX[1]-40, '#CC0000', 350)
     img.resize((1080,1080), Image.LANCZOS).save(out_path, 'JPEG', quality=92)
 
-async def main():
+def main():
     creds_json = json.loads(GOOGLE_CREDS)
     creds = Credentials.from_service_account_info(creds_json,
         scopes=['https://www.googleapis.com/auth/spreadsheets.readonly',
@@ -65,12 +77,11 @@ async def main():
     out = 'post.jpg'
     create_image(phone, price, out)
 
-    bot = Bot(token=TELEGRAM_TOKEN)
-    async with bot:
-        with open(out, 'rb') as f:
-            await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    with open(out, 'rb') as f:
+        bot.send_photo(chat_id=CHANNEL_ID, photo=f)
 
     set_last_row(last + 1)
     print(f'✅ {phone} | پۆست {last+1} لە {len(rows)}')
 
-asyncio.run(main())
+main()
