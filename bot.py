@@ -74,7 +74,7 @@ async def main():
     out = 'post.jpg'
     create_image(phone, price, out)
 
-    bot = Bot(token=TELEGRAM_TOKEN)
+    bot = Bot(token=TELEGRAM_TOKEN, connect_timeout=30, read_timeout=30)
     with open(out, 'rb') as f:
         await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
 
