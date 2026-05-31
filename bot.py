@@ -25,15 +25,6 @@ def set_last_row(row):
     headers = {'Authorization': f'token {PAT_TOKEN}'}
     requests.patch(url, headers=headers, json={'value': str(row)})
 
-def format_price(raw):
-    s = str(raw).strip().replace(',','').replace('،','').replace(' ','')
-    s = s.replace('هەزار','').replace('هزار','')
-    try:
-        n = float(s)
-        if n < 1000: n *= 1000
-        return f'{int(n // 1000)} هەزار'
-    except: return str(raw)
-
 def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=600):
     for size in range(start, 20, -5):
         font = ImageFont.truetype(font_path, size)
@@ -74,9 +65,10 @@ async def main():
     out = 'post.jpg'
     create_image(phone, price, out)
 
-    bot = Bot(token=TELEGRAM_TOKEN, connect_timeout=30, read_timeout=30)
-    with open(out, 'rb') as f:
-        await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
+    bot = Bot(token=TELEGRAM_TOKEN)
+    async with bot:
+        with open(out, 'rb') as f:
+            await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
 
     set_last_row(last + 1)
     print(f'✅ {phone} | پۆست {last+1} لە {len(rows)}')
