@@ -1,5 +1,6 @@
-import os, gspread, json, requests, telegram
+import asyncio, os, gspread, json, requests
 from PIL import Image, ImageDraw, ImageFont
+from telegram import Bot
 from google.oauth2.service_account import Credentials
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
@@ -57,7 +58,7 @@ def create_image(phone, price_raw, out_path):
         BOT_BOX[2]-BOT_BOX[0]-60, BOT_BOX[3]-BOT_BOX[1]-40, '#CC0000', 350)
     img.resize((1080,1080), Image.LANCZOS).save(out_path, 'JPEG', quality=92)
 
-def main():
+async def main():
     creds_json = json.loads(GOOGLE_CREDS)
     creds = Credentials.from_service_account_info(creds_json,
         scopes=['https://www.googleapis.com/auth/spreadsheets.readonly',
@@ -77,12 +78,12 @@ def main():
     out = 'post.jpg'
     create_image(phone, price, out)
 
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    with open(out, 'rb') as f:
-        result = bot.send_photo(chat_id=CHANNEL_ID, photo=f)
-        print(f'پۆست کرا: {result.message_id}')
+    async with Bot(token=TELEGRAM_TOKEN) as bot:
+        with open(out, 'rb') as f:
+            result = await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
+            print(f'پۆست کرا: {result.message_id}')
 
     set_last_row(last + 1)
     print(f'✅ {phone} | پۆست {last+1} لە {len(rows)}')
 
-main()
+asyncio.run(main())
