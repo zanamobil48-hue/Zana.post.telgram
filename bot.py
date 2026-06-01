@@ -79,7 +79,8 @@ def main():
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     with open(out, 'rb') as f:
-        bot.send_photo(chat_id=CHANNEL_ID, photo=f)
+        result = bot.send_photo(chat_id=CHANNEL_ID, photo=f)
+        print(f'پۆست کرا: {result.message_id}')
 
     set_last_row(last + 1)
     print(f'✅ {phone} | پۆست {last+1} لە {len(rows)}')
