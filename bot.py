@@ -84,6 +84,6 @@ async def main():
             print(f'پۆست کرا: {result.message_id}')
 
     set_last_row(last + 1)
-    print(f'✅ {phone} | پۆست {last+1} لە {len(rows)}')
+    print(f'✅ {phone} | پۆۆست {last+1} لە {len(rows)}')
 
 asyncio.run(main())
