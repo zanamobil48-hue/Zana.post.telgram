@@ -79,7 +79,6 @@ async def main():
     create_image(phone, price, out)
 
     # دروستکردنی دوگمەی شووشەیی (Inline Keyboard)
-    # تێبینی: لەبری YourUsername، یوزەرنەیْمی تێلەگرامی خۆت دابنێ بەبێ @
     keyboard = [
         [
             InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/@zanamobil")
@@ -87,8 +86,8 @@ async def main():
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # زیادکردنی دەق (Caption) بۆ پۆستەکە
-    caption_text = f"📱 مۆبایل: {phone}\n💰 نرخ: {format_price(price)}\n\nبۆ کڕین پەیوەندیمان پێوە بکەن 👇"
+    # چارەسەری کێشەی پێچەوانەبوونەوەی ژمارەکە بە بەکارهێنانی نیشانەی \u200E
+    caption_text = f"📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}\n\nبۆ کڕین پەیوەندیمان پێوە بکەن 👇"
 
     async with Bot(token=TELEGRAM_TOKEN) as bot:
         with open(out, 'rb') as f:
