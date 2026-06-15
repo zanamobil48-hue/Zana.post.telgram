@@ -81,7 +81,7 @@ async def main():
     # دروستکردنی دوگمەی شووشەیی (Inline Keyboard)
     keyboard = [
         [
-            InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/@zanamobil")
+            InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
