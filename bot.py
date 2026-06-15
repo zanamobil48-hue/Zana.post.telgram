@@ -1,6 +1,6 @@
 import asyncio, os, gspread, json, requests
 from PIL import Image, ImageDraw, ImageFont
-from telegram import Bot
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from google.oauth2.service_account import Credentials
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
@@ -78,9 +78,26 @@ async def main():
     out = 'post.jpg'
     create_image(phone, price, out)
 
+    # دروستکردنی دوگمەی شووشەیی (Inline Keyboard)
+    # تێبینی: لەبری YourUsername، یوزەرنەیْمی تێلەگرامی خۆت دابنێ بەبێ @
+    keyboard = [
+        [
+            InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/@zanamobil")
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # زیادکردنی دەق (Caption) بۆ پۆستەکە
+    caption_text = f"📱 مۆبایل: {phone}\n💰 نرخ: {format_price(price)}\n\nبۆ کڕین پەیوەندیمان پێوە بکەن 👇"
+
     async with Bot(token=TELEGRAM_TOKEN) as bot:
         with open(out, 'rb') as f:
-            result = await bot.send_photo(chat_id=CHANNEL_ID, photo=f)
+            result = await bot.send_photo(
+                chat_id=CHANNEL_ID, 
+                photo=f,
+                caption=caption_text,
+                reply_markup=reply_markup
+            )
             print(f'پۆست کرا: {result.message_id}')
 
     set_last_row(last + 1)
