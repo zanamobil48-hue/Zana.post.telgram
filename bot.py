@@ -3,35 +3,32 @@ from PIL import Image, ImageDraw, ImageFont
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from google.oauth2.service_account import Credentials
 
+# زانیارییەکان
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
 GOOGLE_CREDS = os.environ.get('GOOGLE_CREDS', '')
-PAT_TOKEN = os.environ.get('PAT_TOKEN', '')
-REPO = os.environ.get('GITHUB_REPOSITORY', '')
-
-# چەناڵی تێست
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 🌐 داتابەیسی گشتی قالبەکان - شوێنی بۆشاییەکان بە تەواوی جیاکرانەوە
+# 🌐 داتابەیسی گشتی قالبەکان (پێوانە + ڕەنگەکان)
 CONFIGS = {
-    # 🎯 قالبە سەرەتاییەکان (١٥ تا ٣٥) - گەڕانەوە بۆ سندوقی ڕەسەنی خۆیان بۆ ئەوەی نەکەونە دەرەوە
-    '15':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '20':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '25':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '30':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '35':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    # قالبە نزمەکان (١٥-٣٠)
+    '15': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '20': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#E60000'}, # 🔴 تایبەت بە داواکاری ٢٠
+    '25': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '30': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     
-    # 🎯 قالبەکانی ٤٠ تا ٥٠ (کە ووتت زۆر ڕێکە و دەستکاری نەکراوە)
-    '40':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '45':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '50':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    # قالبە ڕێکخراوەکانی ٣٥-٥٠
+    '35': {'box': (54, 324, 1026, 464), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '40': {'box': (54, 324, 1026, 464), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '45': {'box': (54, 324, 1026, 464), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '50': {'box': (54, 324, 1026, 464), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     
-    # 🎯 قالبەکانی ٥٥ تا ٦٥ (کەپسولی سەرەوە - ڕەش و سوور)
-    '55':  {'box': (54, 315, 1026, 465),  'base': '#000000', 'special': '#E60000'},
-    '60':  {'box': (105, 121, 975, 273), 'base': '#000000', 'special': '#E60000'},
-    '65':  {'box': (105, 121, 975, 273), 'base': '#000000', 'special': '#E60000'},
+    # ٥٥ تا ٦٥ (کەپسولی سەرەوە)
+    '55': {'box': (54, 315, 1026, 465),  'base': '#000000', 'special': '#E60000'},
+    '60': {'box': (105, 121, 975, 273), 'base': '#000000', 'special': '#E60000'},
+    '65': {'box': (105, 121, 975, 273), 'base': '#000000', 'special': '#E60000'},
     
-    # 🎯 قالبە بەرزەکان ٧٠ تا ١٠٠ (کەپسولی سەرەوە - سوور و ڕەش)
+    # ٧٠ تا ١٠٠ (کەپسولی سەرەوە - سوور و ڕەش)
     '70':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '75':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '80':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
@@ -43,11 +40,10 @@ CONFIGS = {
     'default': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'}
 }
 
-ALL_TEST_PRICES = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '75', '80', '85', '90', '95', '100']
-
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
     split_idx = len(text)
+    # دۆزینەوەی ٤ ژمارەکەی کۆتایی
     for i in range(len(text) - 1, -1, -1):
         if text[i].isdigit():
             digit_count += 1
@@ -95,7 +91,7 @@ def create_image(phone, price_num, out_path):
         
     draw = ImageDraw.Draw(img)
     
-    cfg = CONFIGS.get(price_num, CONFIGS['default'])
+    cfg = CONFIGS.get(str(price_num), CONFIGS['default'])
     box = cfg['box']
     base_color = cfg['base']
     special_color = cfg['special']
@@ -109,34 +105,40 @@ def create_image(phone, price_num, out_path):
     img.save(out_path, 'JPEG', quality=95)
 
 async def main():
-    if not TELEGRAM_TOKEN:
-        print("❌ کێشە لە TELEGRAM_TOKEN هەیە!")
+    if not TELEGRAM_TOKEN or not GOOGLE_CREDS:
         return
 
-    print("🚀 دەستپێکردنی تاقیکردنەوەی نوێ بە پێوانەی جیاواز بۆ ١٥ تا ٣٥...")
+    try:
+        creds_json = json.loads(GOOGLE_CREDS)
+        creds = Credentials.from_service_account_info(creds_json,
+            scopes=['https://www.googleapis.com/auth/spreadsheets.readonly',
+                    'https://www.googleapis.com/auth/drive.readonly'])
+        gc = gspread.authorize(creds)
+        sheet = gc.open_by_key(SHEET_ID).sheet1
+        data = sheet.get_all_values()
+    except Exception as e:
+        print(f"Error: {e}")
+        return
 
     async with Bot(token=TELEGRAM_TOKEN) as bot:
-        for price_num in ALL_TEST_PRICES:
-            phone_test = f"0750 {price_num}0 1234"
-            out = f'test_all_{price_num}.jpg'
+        for r in data:
+            if len(r) < 2: continue
+            phone, price = str(r[0]).strip(), str(r[1]).strip()
+            if not phone or phone in ['مۆبایل', 'نۆرمال']: continue
             
-            try:
-                create_image(phone_test, price_num, out)
-                keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                caption_text = f"🧪 [تاقیکردنەوەی کۆتایی]\n📱 مۆبایل: \u200E{phone_test}\u200E\n💰 قالب: {price_num} هەزار"
-                
-                await bot.send_photo(
-                    chat_id=CHANNEL_ID, 
-                    photo=open(out, 'rb'),
-                    caption=caption_text,
-                    reply_markup=reply_markup
-                )
-                print(f'✅ قالبی {price_num} هەزار ڕێکخرایەوە و ناردرا.')
-                await asyncio.sleep(2)
-                
-            except Exception as e:
-                print(f"❌ کێشە لە قالبی {price_num}: {e}")
+            price_clean = format_price(price)
+            price_num = price_clean.split()[0] if ' ' in price_clean else price_clean.replace('هەزار','')
+            
+            out = f'post_{phone.replace(" ", "_")}.jpg'
+            create_image(phone, price_num, out)
+            
+            keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await bot.send_photo(chat_id=CHANNEL_ID, photo=open(out, 'rb'),
+                                 caption=f"📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {price_clean}",
+                                 reply_markup=reply_markup)
+            await asyncio.sleep(2)
 
 if __name__ == '__main__':
     asyncio.run(main())
