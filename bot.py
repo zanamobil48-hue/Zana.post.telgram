@@ -105,11 +105,10 @@ async def main():
     sheet = gc.open_by_key(SHEET_ID).sheet1
     data = sheet.get_all_values()
 
-    # خوێندنەوەی سەرەتایی داتاکان
     raw_rows = [(r[0].strip(), r[1].strip()) for r in data
             if r[0].strip() and r[1].strip() and r[0].strip() != 'نۆرمال']
 
-    # 🔀 لێرەدا کۆدەکە خۆی داتاکان بەپێی ویستی تۆ لە ١٥ تا ١٠٠ ڕێکدەخاتەوە پێش پۆستکردن
+    # 🔀 لێرەدا کۆدەکە داتاکان بەپێی نرخ لە ١٥ تا ١٠٠ ڕێکدەخاتەوە
     rows = sorted(raw_rows, key=get_sort_key)
 
     last = get_last_row()
