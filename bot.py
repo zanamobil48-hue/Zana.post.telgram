@@ -12,14 +12,14 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📍 لێرەدا پۆزیشنی ٤٥ ڕێک وەک ٣٥ جێگیر کراوە لە ناو کەپسولە سوورەکەی سەرەوە
+# 📍 لێرەدا پۆزیشنی ٥٠ ڕێک وەک ٤٠ جێگیر کراوە لە ناو کەپسولە قاوەییەکەی ناوەڕاست
 BOXES = {
-    '45': (194, 132, 886, 240),  # 🎯 هەمان پێوانەی ڕێکی قالبی ٣٥ هەزار
+    '50': (54, 324, 1026, 464),  # 🎯 هەمان پێوانەی دەقیقی قالبی ٤٠ هەزار
     'default': (100, 190, 980, 330)
 }
 
-# تەنها ٤٥ دیاری کراوە بۆ ئەوەی بەس ئەم جۆرە پۆست بکات
-PRICE_ORDER = ['45']
+# تەنها ٥٠ دیاری کراوە بۆ ئەوەی بەس ئەم جۆرە پۆست بکات
+PRICE_ORDER = ['50']
 
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
@@ -78,9 +78,9 @@ def create_image(phone, price_raw, out_path):
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
     
-    # 🎨 ڕەنگی سپی و زەرد بۆ سەر باکگراوندە سوورەکە
+    # 🎨 ڕەنگی سپی بۆ قالبی ٥٠ هەزار
     base_color = '#FFFFFF'     
-    special_color = '#FFEA00'  
+    special_color = '#FFFFFF'  
     
     draw_centered_mixed(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
         box[2] - box[0] - 20, box[3] - box[1] - 5, base_color, special_color, start=135)
@@ -130,7 +130,7 @@ async def main():
                     create_image(phone, price, out)
                     keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
-                    caption_text = f"🧪 [تاقیکردنەوەی تایبەت بە ٤٥ هەزار]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
+                    caption_text = f"🧪 [تاقیکردنەوەی تایبەت بە ٥٠ هەزار]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
                     
                     await bot.send_photo(
                         chat_id=CHANNEL_ID, 
@@ -138,10 +138,10 @@ async def main():
                         caption=caption_text,
                         reply_markup=reply_markup
                     )
-                    print(f'✅ وێنەی ٤٥ هەزار بە سەرکەوتوویی ناردرا.')
+                    print(f'✅ وێنەی ٥٠ هەزار بە سەرکەوتوویی ناردرا.')
                     
                 except Exception as e:
-                    print(f"❌ کێشە لە پۆستی ٤٥ هەزار: {e}")
+                    print(f"❌ کێشە لە پۆستی ٥٠ هەزار: {e}")
 
 if __name__ == '__main__':
     asyncio.run(main())
