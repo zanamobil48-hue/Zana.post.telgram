@@ -9,8 +9,29 @@ PAT_TOKEN = os.environ.get('PAT_TOKEN', '')
 REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanamobile1'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
-TOP_BOX = (247, 467, 3205, 1109)
-BOT_BOX = (1285, 2740, 2161, 3080)
+
+# 📍 لێرەدا شوێنی ژمارەی مۆبایل بۆ هەر وێنەیەک دیاری کراوە
+BOXES = {
+    '65': (247, 530, 3205, 1172),     # شوێنی وێنە پەمەییەکە
+    '15': (247, 467, 3205, 1109),     # شوێنی وێنە سوورەکان
+    '20': (247, 467, 3205, 1109),
+    '25': (247, 467, 3205, 1109),
+    '30': (247, 467, 3205, 1109),
+    '35': (247, 467, 3205, 1109),
+    '40': (247, 467, 3205, 1109),
+    '45': (247, 467, 3205, 1109),
+    '50': (247, 467, 3205, 1109),
+    '55': (247, 467, 3205, 1109),
+    '60': (247, 467, 3205, 1109),
+    '70': (247, 467, 3205, 1109),
+    '80': (247, 467, 3205, 1109),
+    '85': (247, 467, 3205, 1109),
+    '100': (247, 467, 3205, 1109),
+    'default': (247, 467, 3205, 1109)
+}
+
+# 🔄 ئەو ڕێزبەندییە دەقیقەی کە دەتەوێت پۆستەکان پێڕەوی بکەن
+PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '80', '85', '100']
 
 def get_last_row():
     url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
@@ -46,16 +67,33 @@ def format_price(raw):
         return f'{int(n // 1000)} هەزار'
     except: return str(raw)
 
+def get_sort_key(row):
+    price_clean = format_price(row[1])
+    price_num = price_clean.split()[0] if price_clean else ''
+    if price_num in PRICE_ORDER:
+        return PRICE_ORDER.index(price_num)
+    return len(PRICE_ORDER)
+
 def create_image(phone, price_raw, out_path):
-    img = Image.open('background.jpg').copy()
+    price_clean = format_price(price_raw)
+    price_num = price_clean.split()[0]
+    
+    bg_name = f'{price_num}.jpg'
+    
+    if not os.path.exists(bg_name):
+        print(f"⚠️ ئاگاداری: وێنەی {bg_name} نەدۆزرایەوە! وێنەی background.jpg بەکاردێت.")
+        bg_name = 'background.jpg'
+        
+    img = Image.open(bg_name).copy()
     draw = ImageDraw.Draw(img)
-    price = format_price(price_raw)
-    cx1=(TOP_BOX[0]+TOP_BOX[2])//2; cy1=(TOP_BOX[1]+TOP_BOX[3])//2
+    
+    box = BOXES.get(price_num, BOXES['default'])
+    cx1 = (box[0] + box[2]) // 2
+    cy1 = (box[1] + box[3]) // 2
+    
     draw_centered(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
-        TOP_BOX[2]-TOP_BOX[0]-100, TOP_BOX[3]-TOP_BOX[1]-60, '#CC0000', 600)
-    cx2=(BOT_BOX[0]+BOT_BOX[2])//2; cy2=(BOT_BOX[1]+BOT_BOX[3])//2
-    draw_centered(draw, price, 'NRT-Bd.ttf', cx2, cy2,
-        BOT_BOX[2]-BOT_BOX[0]-60, BOT_BOX[3]-BOT_BOX[1]-40, '#CC0000', 350)
+        box[2] - box[0] - 100, box[3] - box[1] - 60, '#CC0000', 600)
+        
     img.resize((1080,1080), Image.LANCZOS).save(out_path, 'JPEG', quality=92)
 
 async def main():
@@ -67,8 +105,12 @@ async def main():
     sheet = gc.open_by_key(SHEET_ID).sheet1
     data = sheet.get_all_values()
 
-    rows = [(r[0].strip(), r[1].strip()) for r in data
+    # خوێندنەوەی سەرەتایی داتاکان
+    raw_rows = [(r[0].strip(), r[1].strip()) for r in data
             if r[0].strip() and r[1].strip() and r[0].strip() != 'نۆرمال']
+
+    # 🔀 لێرەدا کۆدەکە خۆی داتاکان بەپێی ویستی تۆ لە ١٥ تا ١٠٠ ڕێکدەخاتەوە پێش پۆستکردن
+    rows = sorted(raw_rows, key=get_sort_key)
 
     last = get_last_row()
     if last >= len(rows):
@@ -78,7 +120,6 @@ async def main():
     out = 'post.jpg'
     create_image(phone, price, out)
 
-    # دروستکردنی دوگمەی شووشەیی (Inline Keyboard)
     keyboard = [
         [
             InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")
@@ -86,7 +127,6 @@ async def main():
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # چارەسەری کێشەی پێچەوانەبوونەوەی ژمارەکە بە بەکارهێنانی نیشانەی \u200E
     caption_text = f"📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}\n\nبۆ کڕین پەیوەندیمان پێوە بکەن 👇"
 
     async with Bot(token=TELEGRAM_TOKEN) as bot:
@@ -100,6 +140,6 @@ async def main():
             print(f'پۆست کرا: {result.message_id}')
 
     set_last_row(last + 1)
-    print(f'✅ {phone} | پۆۆست {last+1} لە {len(rows)}')
+    print(f'✅ {phone} | پۆست {last+1} لە {len(rows)} (بەپێی ڕێزبەندی نرخ)')
 
 asyncio.run(main())
