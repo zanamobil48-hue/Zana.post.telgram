@@ -34,25 +34,6 @@ BOXES = {
 
 PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '80', '85', '100']
 
-def get_last_row():
-    try:
-        url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
-        headers = {'Authorization': f'token {PAT_TOKEN}'}
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200:
-            return int(r.json().get('value', '0'))
-    except:
-        pass
-    return 0
-
-def set_last_row(row):
-    try:
-        url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
-        headers = {'Authorization': f'token {PAT_TOKEN}'}
-        requests.patch(url, headers=headers, json={'value': str(row)})
-    except:
-        pass
-
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
     split_idx = len(text)
@@ -92,14 +73,6 @@ def format_price(raw):
             pass
     return str(raw)
 
-def get_sort_key(row):
-    price_clean = format_price(row[1])
-    words = price_clean.split()
-    price_num = words[0] if words else ''
-    if price_num in PRICE_ORDER:
-        return PRICE_ORDER.index(price_num)
-    return len(PRICE_ORDER)
-
 def create_image(phone, price_raw, out_path):
     price_clean = format_price(price_raw)
     words = price_clean.split()
@@ -107,28 +80,34 @@ def create_image(phone, price_raw, out_path):
     
     bg_name = f'{price_num}.jpg'
     if not os.path.exists(bg_name):
-        print(f"⚠️ وێنەی {bg_name} نەدۆزرایەوە، background.jpg بەکاردێت.")
         bg_name = 'background.jpg'
         
     img = Image.open(bg_name).copy()
-    
     if img.size != (1080, 1080):
         img = img.resize((1080, 1080), Image.LANCZOS)
         
     draw = ImageDraw.Draw(img)
-    
     box = BOXES.get(price_num, BOXES['default'])
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
     
-    if price_num == '15':
-        base_color = '#FFFFFF'  # سپی بۆ 15 هەزار
+    # 🎨 ڕەنگەکان بەپێی یاساکانی تۆ:
+    if price_num in ['15', '25', '35', '45']:
+        base_color = '#FFFFFF'     # سپی
+        special_color = '#FFEA00'  # زەرد
+    elif price_num in ['20', '30', '70', '80', '85', '100']:
+        base_color = '#000000'     # ڕەش
+        special_color = '#E60000'  # سوور
+    elif price_num in ['40', '50']:
+        base_color = '#FFFFFF'     # هەمووی سپی
+        special_color = '#FFFFFF'  
+    elif price_num in ['55', '60', '65']:
+        base_color = '#000000'     # هەمووی ڕەش
+        special_color = '#000000'  
     else:
-        base_color = '#000000'  # ڕەش بۆ ئەوانی تر
-        
-    special_color = '#E60000'  # سوور بۆ 4 ژمارەی کۆتایی
+        base_color = '#000000'     
+        special_color = '#E60000'
     
-    # 📏 لێرەدا مەودای لایەکانمان فراوانتر کردووە (box[2] - box[0] - 20) بۆ ئەوەی فۆنتەکە گەورەتر بێت
     draw_centered_mixed(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
         box[2] - box[0] - 20, box[3] - box[1] - 5, base_color, special_color, start=135)
         
@@ -136,7 +115,7 @@ def create_image(phone, price_raw, out_path):
 
 async def main():
     if not TELEGRAM_TOKEN or not GOOGLE_CREDS:
-        print("❌ کێشە لە سکرێتەکان (Secrets) هەیە!")
+        print("❌ کێشە لە سکرێتەکان هەیە!")
         return
 
     try:
@@ -148,7 +127,7 @@ async def main():
         sheet = gc.open_by_key(SHEET_ID).sheet1
         data = sheet.get_all_values()
     except Exception as e:
-        print(f"❌ کێشە لە پەیوەستبوون بە گوگل شەیت هەیە: {e}")
+        print(f"❌ کێشە لە گوگل شێت: {e}")
         return
 
     raw_rows = []
@@ -159,41 +138,43 @@ async def main():
             if p1 and p2 and p1 != 'نۆرمال' and p1 != 'مۆبایل' and p2 != 'نرخ':
                 raw_rows.append((p1, p2))
 
-    if not raw_rows:
-        print("❌ هیچ داتایەکی دروست نەدۆزرایەوە!")
-        return
+    # 🧪 لێرەدا لە هەر جۆرە نرخێک یەک دانە نموونە هەڵدەبژێرین
+    samples = {}
+    for phone, price in raw_rows:
+        price_clean = format_price(price)
+        words = price_clean.split()
+        price_num = words[0] if words else 'default'
+        if price_num in PRICE_ORDER and price_num not in samples:
+            samples[price_num] = (phone, price)
 
-    rows = sorted(raw_rows, key=get_sort_key)
-    last = get_last_row()
-    if last >= len(rows):
-        last = 0
+    print(f"🔄 دۆزینەوەی {len(samples)} جۆر نرخ بۆ تاقیکردنەوەی گشتی...")
 
-    phone, price = rows[last]
-    out = 'post.jpg'
-    
-    try:
-        create_image(phone, price, out)
-    except Exception as e:
-        print(f"❌ کێشە لە دروستکردنی وێنەکە ڕوویدا: {e}")
-        return
-
-    keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    caption_text = f"📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}\n\nبۆ کڕین پەیوەندیمان پێوە بکەن 👇"
-
-    try:
-        async with Bot(token=TELEGRAM_TOKEN) as bot:
-            with open(out, 'rb') as f:
-                result = await bot.send_photo(
-                    chat_id=CHANNEL_ID, 
-                    photo=f,
-                    caption=caption_text,
-                    reply_markup=reply_markup
-                )
-                print(f'✅ پۆست کرا بۆ چەناڵی تێست: {result.message_id}')
-        set_last_row(last + 1)
-    except Exception as e:
-        print(f"❌ کێشە لە ناردنی پۆستەکە بۆ تێلەگرام ڕوویدا: {e}")
+    async with Bot(token=TELEGRAM_TOKEN) as bot:
+        for price_num in PRICE_ORDER:
+            if price_num in samples:
+                phone, price = samples[price_num]
+                out = f'test_{price_num}.jpg'
+                
+                try:
+                    create_image(phone, price, out)
+                    
+                    keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    caption_text = f"🧪 [پۆستی تاقیکردنەوە]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
+                    
+                    await bot.send_photo(
+                        chat_id=CHANNEL_ID, 
+                        photo=open(out, 'rb'),
+                        caption=caption_text,
+                        reply_markup=reply_markup
+                    )
+                    print(f'✅ وێنەی نرخی {price_num} هەزار ناردرا.')
+                    await asyncio.sleep(3) # چاوەڕوانی بۆ ئەوەی تێلەگرام بلۆکمان نەکات
+                    
+                except Exception as e:
+                    print(f"❌ کێشە لە نرخی {price_num}: {e}")
+                    
+    print("✨ تاقیکردنەوەی گشتی بە سەرکەوتوویی تەواو بوو!")
 
 if __name__ == '__main__':
     asyncio.run(main())
