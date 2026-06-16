@@ -53,8 +53,7 @@ def set_last_row(row):
     except:
         pass
 
-def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=120):
-    # دۆزینەوەی شوێنی بڕینی ٤ ژمارەکەی کۆتایی
+def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
     split_idx = len(text)
     for i in range(len(text) - 1, -1, -1):
@@ -75,13 +74,8 @@ def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color,
             x = cx - (bbox[0]+bbox[2])//2
             y = cy - (bbox[1]+bbox[3])//2
             
-            # نووسینی بەشی یەکەم (ڕەش یان سپی)
             draw.text((x, y), part1, font=font, fill=base_color)
-            
-            # دۆزینەوەی پانی بەشی یەکەم بۆ ئەوەی بەشی سوورەکە ڕێک بە دوایدا بێت
             w1 = draw.textlength(part1, font=font)
-            
-            # نووسینی ٤ ژمارەکەی کۆتایی بە سووری
             draw.text((x + w1, y), part2, font=font, fill=special_color)
             return size
     return 0
@@ -127,17 +121,16 @@ def create_image(phone, price_raw, out_path):
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
     
-    # 🎨 دیاریکردنی ڕەنگەکان بەپێی جۆری باکگراوەندەکە
     if price_num == '15':
-        base_color = '#FFFFFF'  # سپی بۆ پاشبنەمای ١٥ هەزار چونکە تاریکە
+        base_color = '#FFFFFF'  # سپی بۆ 15 هەزار
     else:
-        base_color = '#000000'  # ڕەش بۆ پاشبنەمای ٢٠ هەزار و ئەوانی تر چونکە سپین
+        base_color = '#000000'  # ڕەش بۆ ئەوانی تر
         
-    special_color = '#E60000'  # سوورێکی گەش بۆ ٤ ژمارەکەی کۆتایی
+    special_color = '#E60000'  # سوور بۆ 4 ژمارەی کۆتایی
     
-    # کێشانی نووسینە تێکەڵەکە لە ناوەڕاستدا
+    # 📏 لێرەدا مەودای لایەکانمان فراوانتر کردووە (box[2] - box[0] - 20) بۆ ئەوەی فۆنتەکە گەورەتر بێت
     draw_centered_mixed(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
-        box[2] - box[0] - 60, box[3] - box[1] - 10, base_color, special_color, start=110)
+        box[2] - box[0] - 20, box[3] - box[1] - 5, base_color, special_color, start=135)
         
     img.save(out_path, 'JPEG', quality=95)
 
