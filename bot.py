@@ -8,11 +8,11 @@ GOOGLE_CREDS = os.environ.get('GOOGLE_CREDS', '')
 PAT_TOKEN = os.environ.get('PAT_TOKEN', '')
 REPO = os.environ.get('GITHUB_REPOSITORY', '')
 
-# 🌟 گۆڕدرا بۆ چەناڵە تێستەکەت بۆ ئەوەی بە سەلامەتی تاقی بکەیتەوە
+# چەناڵی تێست
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📍 ڕێکخستنی نوێی بۆشاییەکە (هێنانە خوارەوەی زیاتر بۆ ناوەڕاستی چوارگۆشە شووشەییەکە)
+# 📍 کۆۆردیناتی بۆشایی چوارگۆشەکان
 BOXES = {
     '15': (100, 190, 980, 330),
     '20': (100, 190, 980, 330),
@@ -53,7 +53,20 @@ def set_last_row(row):
     except:
         pass
 
-def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=120):
+def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=120):
+    # دۆزینەوەی شوێنی بڕینی ٤ ژمارەکەی کۆتایی
+    digit_count = 0
+    split_idx = len(text)
+    for i in range(len(text) - 1, -1, -1):
+        if text[i].isdigit():
+            digit_count += 1
+        if digit_count == 4:
+            split_idx = i
+            break
+            
+    part1 = text[:split_idx]
+    part2 = text[split_idx:]
+
     for size in range(start, 20, -2):
         font = ImageFont.truetype(font_path, size)
         bbox = draw.textbbox((0,0), text, font=font)
@@ -61,7 +74,15 @@ def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=120)
         if tw <= max_w and th <= max_h:
             x = cx - (bbox[0]+bbox[2])//2
             y = cy - (bbox[1]+bbox[3])//2
-            draw.text((x, y), text, font=font, fill=color)
+            
+            # نووسینی بەشی یەکەم (ڕەش یان سپی)
+            draw.text((x, y), part1, font=font, fill=base_color)
+            
+            # دۆزینەوەی پانی بەشی یەکەم بۆ ئەوەی بەشی سوورەکە ڕێک بە دوایدا بێت
+            w1 = draw.textlength(part1, font=font)
+            
+            # نووسینی ٤ ژمارەکەی کۆتایی بە سووری
+            draw.text((x + w1, y), part2, font=font, fill=special_color)
             return size
     return 0
 
@@ -106,9 +127,17 @@ def create_image(phone, price_raw, out_path):
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
     
-    # نووسینی سپی لە ناوەڕاستی چوارگۆشەکەدا
-    draw_centered(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
-        box[2] - box[0] - 60, box[3] - box[1] - 10, '#FFFFFF', start=110)
+    # 🎨 دیاریکردنی ڕەنگەکان بەپێی جۆری باکگراوەندەکە
+    if price_num == '15':
+        base_color = '#FFFFFF'  # سپی بۆ پاشبنەمای ١٥ هەزار چونکە تاریکە
+    else:
+        base_color = '#000000'  # ڕەش بۆ پاشبنەمای ٢٠ هەزار و ئەوانی تر چونکە سپین
+        
+    special_color = '#E60000'  # سوورێکی گەش بۆ ٤ ژمارەکەی کۆتایی
+    
+    # کێشانی نووسینە تێکەڵەکە لە ناوەڕاستدا
+    draw_centered_mixed(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
+        box[2] - box[0] - 60, box[3] - box[1] - 10, base_color, special_color, start=110)
         
     img.save(out_path, 'JPEG', quality=95)
 
