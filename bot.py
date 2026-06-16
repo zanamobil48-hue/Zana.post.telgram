@@ -1,4 +1,4 @@
-import asyncio, os, gspread, json, requests
+import asyncio, os, gspread, json, requests, re
 from PIL import Image, ImageDraw, ImageFont
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from google.oauth2.service_account import Credentials
@@ -10,10 +10,10 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanamobile1'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📍 لێرەدا شوێنی ژمارەی مۆبایل بۆ هەر وێنەیەک دیاری کراوە
+# 📍 شوێنی دیاریکراوی ژمارەکان لەسەر وێنەکان
 BOXES = {
-    '65': (247, 530, 3205, 1172),     # شوێنی وێنە پەمەییەکە
-    '15': (247, 467, 3205, 1109),     # شوێنی وێنە سوورەکان
+    '65': (247, 530, 3205, 1172),     
+    '15': (247, 467, 3205, 1109),     
     '20': (247, 467, 3205, 1109),
     '25': (247, 467, 3205, 1109),
     '30': (247, 467, 3205, 1109),
@@ -30,21 +30,26 @@ BOXES = {
     'default': (247, 467, 3205, 1109)
 }
 
-# 🔄 ئەو ڕێزبەندییە دەقیقەی کە دەتەوێت پۆستەکان پێڕەوی بکەن
 PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '80', '85', '100']
 
 def get_last_row():
-    url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
-    headers = {'Authorization': f'token {PAT_TOKEN}'}
-    r = requests.get(url, headers=headers)
-    if r.status_code == 200:
-        return int(r.json().get('value', '0'))
+    try:
+        url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
+        headers = {'Authorization': f'token {PAT_TOKEN}'}
+        r = requests.get(url, headers=headers)
+        if r.status_code == 200:
+            return int(r.json().get('value', '0'))
+    except:
+        pass
     return 0
 
 def set_last_row(row):
-    url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
-    headers = {'Authorization': f'token {PAT_TOKEN}'}
-    requests.patch(url, headers=headers, json={'value': str(row)})
+    try:
+        url = f'https://api.github.com/repos/{REPO}/actions/variables/LAST_ROW'
+        headers = {'Authorization': f'token {PAT_TOKEN}'}
+        requests.patch(url, headers=headers, json={'value': str(row)})
+    except:
+        pass
 
 def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=600):
     for size in range(start, 20, -5):
@@ -60,28 +65,32 @@ def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=600)
 
 def format_price(raw):
     s = str(raw).strip().replace(',','').replace('،','').replace(' ','')
-    s = s.replace('هەزار','').replace('هزار','')
-    try:
-        n = float(s)
-        if n < 1000: n *= 1000
-        return f'{int(n // 1000)} هەزار'
-    except: return str(raw)
+    digits = re.findall(r'\d+', s)
+    if digits:
+        try:
+            n = float(digits[0])
+            if n < 1000: n *= 1000
+            return f'{int(n // 1000)} هەزار'
+        except:
+            pass
+    return str(raw)
 
 def get_sort_key(row):
     price_clean = format_price(row[1])
-    price_num = price_clean.split()[0] if price_clean else ''
+    words = price_clean.split()
+    price_num = words[0] if words else ''
     if price_num in PRICE_ORDER:
         return PRICE_ORDER.index(price_num)
     return len(PRICE_ORDER)
 
 def create_image(phone, price_raw, out_path):
     price_clean = format_price(price_raw)
-    price_num = price_clean.split()[0]
+    words = price_clean.split()
+    price_num = words[0] if words else 'default'
     
     bg_name = f'{price_num}.jpg'
-    
     if not os.path.exists(bg_name):
-        print(f"⚠️ ئاگاداری: وێنەی {bg_name} نەدۆزرایەوە! وێنەی background.jpg بەکاردێت.")
+        print(f"⚠️ وێنەی {bg_name} نەدۆزرایەوە، background.jpg بەکاردێت.")
         bg_name = 'background.jpg'
         
     img = Image.open(bg_name).copy()
@@ -97,48 +106,66 @@ def create_image(phone, price_raw, out_path):
     img.resize((1080,1080), Image.LANCZOS).save(out_path, 'JPEG', quality=92)
 
 async def main():
-    creds_json = json.loads(GOOGLE_CREDS)
-    creds = Credentials.from_service_account_info(creds_json,
-        scopes=['https://www.googleapis.com/auth/spreadsheets.readonly',
-                'https://www.googleapis.com/auth/drive.readonly'])
-    gc = gspread.authorize(creds)
-    sheet = gc.open_by_key(SHEET_ID).sheet1
-    data = sheet.get_all_values()
+    if not TELEGRAM_TOKEN or not GOOGLE_CREDS:
+        print("❌ کێشە لە سکرێتەکان (Secrets) هەیە! دڵنیابەوە لە تێدابوونیان.")
+        return
 
-    raw_rows = [(r[0].strip(), r[1].strip()) for r in data
-            if r[0].strip() and r[1].strip() and r[0].strip() != 'نۆرمال']
+    try:
+        creds_json = json.loads(GOOGLE_CREDS)
+        creds = Credentials.from_service_account_info(creds_json,
+            scopes=['https://www.googleapis.com/auth/spreadsheets.readonly',
+                    'https://www.googleapis.com/auth/drive.readonly'])
+        gc = gspread.authorize(creds)
+        sheet = gc.open_by_key(SHEET_ID).sheet1
+        data = sheet.get_all_values()
+    except Exception as e:
+        print(f"❌ کێشە لە پەیوەستبوون بە گوگل شەیت هەیە: {e}")
+        return
 
-    # 🔀 لێرەدا کۆدەکە داتاکان بەپێی نرخ لە ١٥ تا ١٠٠ ڕێکدەخاتەوە
+    # 🛡️ پاڵفتەکردنی داتا بە شێوازێکی زۆر سەلامەت دژی ڕیزی بەتاڵ
+    raw_rows = []
+    for r in data:
+        if len(r) >= 2:
+            p1 = str(r[0]).strip()
+            p2 = str(r[1]).strip()
+            if p1 and p2 and p1 != 'نۆرمال' and p1 != 'مۆبایل' and p2 != 'نرخ':
+                raw_rows.append((p1, p2))
+
+    if not raw_rows:
+        print("❌ هیچ داتایەکی دروست لە ناو گوگل شەیتەکەدا نەدۆزرایەوە!")
+        return
+
     rows = sorted(raw_rows, key=get_sort_key)
-
     last = get_last_row()
     if last >= len(rows):
         last = 0
 
     phone, price = rows[last]
     out = 'post.jpg'
-    create_image(phone, price, out)
+    
+    try:
+        create_image(phone, price, out)
+    except Exception as e:
+        print(f"❌ کێشە لە دروستکردنی وێنەکە ڕوویدا: {e}")
+        return
 
-    keyboard = [
-        [
-            InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")
-        ]
-    ]
+    keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
     caption_text = f"📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}\n\nبۆ کڕین پەیوەندیمان پێوە بکەن 👇"
 
-    async with Bot(token=TELEGRAM_TOKEN) as bot:
-        with open(out, 'rb') as f:
-            result = await bot.send_photo(
-                chat_id=CHANNEL_ID, 
-                photo=f,
-                caption=caption_text,
-                reply_markup=reply_markup
-            )
-            print(f'پۆست کرا: {result.message_id}')
+    try:
+        async with Bot(token=TELEGRAM_TOKEN) as bot:
+            with open(out, 'rb') as f:
+                result = await bot.send_photo(
+                    chat_id=CHANNEL_ID, 
+                    photo=f,
+                    caption=caption_text,
+                    reply_markup=reply_markup
+                )
+                print(f'✅ پۆست کرا بە سەرکوتوویی: {result.message_id}')
+        set_last_row(last + 1)
+    except Exception as e:
+        print(f"❌ کێشە لە ناردنی پۆستەکە بۆ تێلەگرام ڕوویدا: {e}")
 
-    set_last_row(last + 1)
-    print(f'✅ {phone} | پۆست {last+1} لە {len(rows)} (بەپێی ڕێزبەندی نرخ)')
-
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())
