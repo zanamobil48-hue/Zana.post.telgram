@@ -12,17 +12,34 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📍 پێوانەی هاوبەشی قالبەکانی ٧٠، ٨٠، ٨٥ و ١٠٠ لە ناو کەپسولە سپییەکەی سەرەوەدا
-BOXES = {
-    '70': (105, 150, 965, 285),
-    '80': (105, 150, 965, 285),
-    '85': (105, 150, 965, 285),
-    '100': (105, 150, 965, 285),  # 🎯 قالبی ١٠٠ هەزاریش لێرە جێگیر کرا
-    'default': (100, 190, 980, 330)
+# 🌐 داتابەیسی گشتی قالبەکان
+CONFIGS = {
+    '15':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '20':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '25':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '30':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '35':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '40':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '45':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '50':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    
+    '55':  {'box': (54, 315, 1026, 465),  'base': '#000000', 'special': '#E60000'},
+    '60':  {'box': (105, 121, 975, 273), 'base': '#000000', 'special': '#E60000'},
+    '65':  {'box': (105, 121, 975, 273), 'base': '#000000', 'special': '#E60000'},
+    
+    '70':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    '75':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    '80':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    '85':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    '90':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    '95':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    '100': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    
+    'default': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#E60000'}
 }
 
-# چوار نرخەکە لێرەدا دیاری کراون بۆ پۆستکردن پێکەوە
-PRICE_ORDER = ['70', '80', '85', '100']
+# لیستی گشتی بۆ تاقیکردنەوەی سەرجەم قالبەکان بە دوای یەکدا
+ALL_TEST_PRICES = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '75', '80', '85', '90', '95', '100']
 
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
@@ -63,11 +80,7 @@ def format_price(raw):
             pass
     return str(raw)
 
-def create_image(phone, price_raw, out_path):
-    price_clean = format_price(price_raw)
-    words = price_clean.split()
-    price_num = words[0] if words else 'default'
-    
+def create_image(phone, price_num, out_path):
     bg_name = f'{price_num}.jpg'
     if not os.path.exists(bg_name):
         bg_name = 'background.jpg'
@@ -77,13 +90,14 @@ def create_image(phone, price_raw, out_path):
         img = img.resize((1080, 1080), Image.LANCZOS)
         
     draw = ImageDraw.Draw(img)
-    box = BOXES.get(price_num, BOXES['default'])
+    
+    cfg = CONFIGS.get(price_num, CONFIGS['default'])
+    box = cfg['box']
+    base_color = cfg['base']
+    special_color = cfg['special']
+    
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
-    
-    # 🎨 ڕێکخستنی ڕەنگەکان: سەرەتا سوور و چوار دانەی کۆتایی ڕەش
-    base_color = '#E60000'     # 🔴 سووری ئاسیاسێڵ بۆ سەرەتای ژمارەکە
-    special_color = '#000000'  # ⚫ ڕەشی تۆخ بۆ ٤ ژمارەکەی کۆتایی
     
     draw_centered_mixed(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
         box[2] - box[0] - 40, box[3] - box[1] - 5, base_color, special_color, start=135)
@@ -91,67 +105,35 @@ def create_image(phone, price_raw, out_path):
     img.save(out_path, 'JPEG', quality=95)
 
 async def main():
-    if not TELEGRAM_TOKEN or not GOOGLE_CREDS:
-        print("❌ کێشە لە ڕێکخستنی سکرێتەکان هەیە!")
+    if not TELEGRAM_TOKEN:
+        print("❌ کێشە لە TELEGRAM_TOKEN هەیە!")
         return
 
-    try:
-        creds_json = json.loads(GOOGLE_CREDS)
-        creds = Credentials.from_service_account_info(creds_json,
-            scopes=['https://www.googleapis.com/auth/spreadsheets.readonly',
-                    'https://www.googleapis.com/auth/drive.readonly'])
-        gc = gspread.authorize(creds)
-        sheet = gc.open_by_key(SHEET_ID).sheet1
-        data = sheet.get_all_values()
-        print(f"📊 داتا خوێندرایەوە. ژمارەی ڕیزەکان: {len(data)}")
-    except Exception as e:
-        print(f"❌ کێشە لە گوگل شێت: {e}")
-        return
-
-    raw_rows = []
-    for r in data:
-        if len(r) >= 2:
-            p1 = str(r[0]).strip()
-            p2 = str(r[1]).strip()
-            if p1 and p2 and p1 != 'نۆرمال' and p1 != 'مۆبایل' and p2 != 'نرخ':
-                raw_rows.append((p1, p2))
-
-    samples = {}
-    for phone, price in raw_rows:
-        price_clean = format_price(price)
-        words = price_clean.split()
-        price_num = words[0] if words else 'default'
-        if price_num in PRICE_ORDER and price_num not in samples:
-            samples[price_num] = (phone, price)
-
-    # ⚠️ دروستکردنی داتای خیاڵی ئەگەر لە شێتەکەدا نەبن بۆ تاقیکردنەوەی خێرا
-    if '70' not in samples: samples['70'] = ('0770 700 0000', '70000')
-    if '80' not in samples: samples['80'] = ('0770 800 0000', '80000')
-    if '85' not in samples: samples['85'] = ('0770 850 0000', '85000')
-    if '100' not in samples: samples['100'] = ('0770 100 0000', '100000')
+    print("🚀 دەستپێکردنی تاقیکردنەوەی گشتی سەرجەم قالبەکان...")
 
     async with Bot(token=TELEGRAM_TOKEN) as bot:
-        for price_num in PRICE_ORDER:
-            if price_num in samples:
-                phone, price = samples[price_num]
-                out = f'test_{price_num}.jpg'
+        for price_num in ALL_TEST_PRICES:
+            # دروستکردنی ژمارەی تاقیکردنەوە بەپێی کۆدی کۆتایی نرخەکە
+            phone_test = f"0750 {price_num}0 1234"
+            out = f'test_all_{price_num}.jpg'
+            
+            try:
+                create_image(phone_test, price_num, out)
+                keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                caption_text = f"🧪 [تاقیکردنەوەی گشتی]\n📱 مۆبایل: \u200E{phone_test}\u200E\n💰 قالب: {price_num} هەزار"
                 
-                try:
-                    create_image(phone, price, out)
-                    keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
-                    reply_markup = InlineKeyboardMarkup(keyboard)
-                    caption_text = f"🧪 [تاقیکردنەوەی هاوبەش]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
-                    
-                    await bot.send_photo(
-                        chat_id=CHANNEL_ID, 
-                        photo=open(out, 'rb'),
-                        caption=caption_text,
-                        reply_markup=reply_markup
-                    )
-                    print(f'✅ وێنەی {price_num} هەزار بە سەرکەوتوویی ناردرا.')
-                    
-                except Exception as e:
-                    print(f"❌ کێشە لە پۆستی {price_num} هەزار: {e}")
+                await bot.send_photo(
+                    chat_id=CHANNEL_ID, 
+                    photo=open(out, 'rb'),
+                    caption=caption_text,
+                    reply_markup=reply_markup
+                )
+                print(f'✅ قالبی {price_num} هەزار بە سەرکەوتوویی پۆست کرا بۆ تێست.')
+                await asyncio.sleep(2) # بۆ ئەوەی تێلیگرام ڕێگری نەکات لە ناردنی خێرا
+                
+            except Exception as e:
+                print(f"❌ کێشە لە ناردنی قالبی {price_num}: {e}")
 
 if __name__ == '__main__':
     asyncio.run(main())
