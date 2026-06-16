@@ -10,24 +10,24 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanamobile1'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📍 شوێنی دیاریکراوی ژمارەکان لەسەر وێنەکان
+# 📍 ڕێکخستنی نوێ: دیاریکردنی ناو بۆشاییە سپییەکەی سەرەوەی وێنەکانت (1080x1080)
 BOXES = {
-    '65': (247, 530, 3205, 1172),     
-    '15': (247, 467, 3205, 1109),     
-    '20': (247, 467, 3205, 1109),
-    '25': (247, 467, 3205, 1109),
-    '30': (247, 467, 3205, 1109),
-    '35': (247, 467, 3205, 1109),
-    '40': (247, 467, 3205, 1109),
-    '45': (247, 467, 3205, 1109),
-    '50': (247, 467, 3205, 1109),
-    '55': (247, 467, 3205, 1109),
-    '60': (247, 467, 3205, 1109),
-    '70': (247, 467, 3205, 1109),
-    '80': (247, 467, 3205, 1109),
-    '85': (247, 467, 3205, 1109),
-    '100': (247, 467, 3205, 1109),
-    'default': (247, 467, 3205, 1109)
+    '15': (100, 130, 980, 250),
+    '20': (100, 130, 980, 250),
+    '25': (100, 130, 980, 250),
+    '30': (100, 130, 980, 250),
+    '35': (100, 130, 980, 250),
+    '40': (100, 130, 980, 250),
+    '45': (100, 130, 980, 250),
+    '50': (100, 130, 980, 250),
+    '55': (100, 130, 980, 250),
+    '60': (100, 130, 980, 250),
+    '65': (100, 130, 980, 250),
+    '70': (100, 130, 980, 250),
+    '80': (100, 130, 980, 250),
+    '85': (100, 130, 980, 250),
+    '100': (100, 130, 980, 250),
+    'default': (100, 130, 980, 250)
 }
 
 PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '80', '85', '100']
@@ -51,8 +51,8 @@ def set_last_row(row):
     except:
         pass
 
-def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=600):
-    for size in range(start, 20, -5):
+def draw_centered(draw, text, font_path, cx, cy, max_w, max_h, color, start=120):
+    for size in range(start, 20, -2):
         font = ImageFont.truetype(font_path, size)
         bbox = draw.textbbox((0,0), text, font=font)
         tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
@@ -94,20 +94,26 @@ def create_image(phone, price_raw, out_path):
         bg_name = 'background.jpg'
         
     img = Image.open(bg_name).copy()
+    
+    # دڵنیابوونەوە لەوەی وێنەکە ١٠٨٠ بە ١٠٨٠یە بۆ ئەوەی شوێنەکە تێکنەچێت
+    if img.size != (1080, 1080):
+        img = img.resize((1080, 1080), Image.LANCZOS)
+        
     draw = ImageDraw.Draw(img)
     
     box = BOXES.get(price_num, BOXES['default'])
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
     
+    # گۆڕینی ڕەنگەکە بۆ سپی (#FFFFFF) و ڕێکخستنی قەبارەی گونجاو
     draw_centered(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
-        box[2] - box[0] - 100, box[3] - box[1] - 60, '#CC0000', 600)
+        box[2] - box[0] - 60, box[3] - box[1] - 20, '#FFFFFF', start=110)
         
-    img.resize((1080,1080), Image.LANCZOS).save(out_path, 'JPEG', quality=92)
+    img.save(out_path, 'JPEG', quality=95)
 
 async def main():
     if not TELEGRAM_TOKEN or not GOOGLE_CREDS:
-        print("❌ کێشە لە سکرێتەکان (Secrets) هەیە! دڵنیابەوە لە تێدابوونیان.")
+        print("❌ کێشە لە سکرێتەکان (Secrets) هەیە!")
         return
 
     try:
@@ -122,7 +128,6 @@ async def main():
         print(f"❌ کێشە لە پەیوەستبوون بە گوگل شەیت هەیە: {e}")
         return
 
-    # 🛡️ پاڵفتەکردنی داتا بە شێوازێکی زۆر سەلامەت دژی ڕیزی بەتاڵ
     raw_rows = []
     for r in data:
         if len(r) >= 2:
@@ -132,7 +137,7 @@ async def main():
                 raw_rows.append((p1, p2))
 
     if not raw_rows:
-        print("❌ هیچ داتایەکی دروست لە ناو گوگل شەیتەکەدا نەدۆزرایەوە!")
+        print("❌ هیچ داتایەکی دروست نەدۆزرایەوە!")
         return
 
     rows = sorted(raw_rows, key=get_sort_key)
