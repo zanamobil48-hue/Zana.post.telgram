@@ -12,21 +12,26 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 🌐 داتابەیسی گشتی قالبەکان
+# 🌐 داتابەیسی گشتی قالبەکان - شوێنی بۆشاییەکان بە تەواوی جیاکرانەوە
 CONFIGS = {
-    '15':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '20':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '25':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '30':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '35':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
+    # 🎯 قالبە سەرەتاییەکان (١٥ تا ٣٥) - گەڕانەوە بۆ سندوقی ڕەسەنی خۆیان بۆ ئەوەی نەکەونە دەرەوە
+    '15':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '20':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '25':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '30':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '35':  {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    
+    # 🎯 قالبەکانی ٤٠ تا ٥٠ (کە ووتت زۆر ڕێکە و دەستکاری نەکراوە)
     '40':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
     '45':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
     '50':  {'box': (54, 324, 1026, 464),  'base': '#FFFFFF', 'special': '#FFFFFF'},
     
+    # 🎯 قالبەکانی ٥٥ تا ٦٥ (کەپسولی سەرەوە - ڕەش و سوور)
     '55':  {'box': (54, 315, 1026, 465),  'base': '#000000', 'special': '#E60000'},
     '60':  {'box': (105, 121, 975, 273), 'base': '#000000', 'special': '#E60000'},
     '65':  {'box': (105, 121, 975, 273), 'base': '#000000', 'special': '#E60000'},
     
+    # 🎯 قالبە بەرزەکان ٧٠ تا ١٠٠ (کەپسولی سەرەوە - سوور و ڕەش)
     '70':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '75':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '80':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
@@ -35,10 +40,9 @@ CONFIGS = {
     '95':  {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '100': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     
-    'default': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#E60000'}
+    'default': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'}
 }
 
-# لیستی گشتی بۆ تاقیکردنەوەی سەرجەم قالبەکان بە دوای یەکدا
 ALL_TEST_PRICES = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '75', '80', '85', '90', '95', '100']
 
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
@@ -109,11 +113,10 @@ async def main():
         print("❌ کێشە لە TELEGRAM_TOKEN هەیە!")
         return
 
-    print("🚀 دەستپێکردنی تاقیکردنەوەی گشتی سەرجەم قالبەکان...")
+    print("🚀 دەستپێکردنی تاقیکردنەوەی نوێ بە پێوانەی جیاواز بۆ ١٥ تا ٣٥...")
 
     async with Bot(token=TELEGRAM_TOKEN) as bot:
         for price_num in ALL_TEST_PRICES:
-            # دروستکردنی ژمارەی تاقیکردنەوە بەپێی کۆدی کۆتایی نرخەکە
             phone_test = f"0750 {price_num}0 1234"
             out = f'test_all_{price_num}.jpg'
             
@@ -121,7 +124,7 @@ async def main():
                 create_image(phone_test, price_num, out)
                 keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
-                caption_text = f"🧪 [تاقیکردنەوەی گشتی]\n📱 مۆبایل: \u200E{phone_test}\u200E\n💰 قالب: {price_num} هەزار"
+                caption_text = f"🧪 [تاقیکردنەوەی کۆتایی]\n📱 مۆبایل: \u200E{phone_test}\u200E\n💰 قالب: {price_num} هەزار"
                 
                 await bot.send_photo(
                     chat_id=CHANNEL_ID, 
@@ -129,11 +132,11 @@ async def main():
                     caption=caption_text,
                     reply_markup=reply_markup
                 )
-                print(f'✅ قالبی {price_num} هەزار بە سەرکەوتوویی پۆست کرا بۆ تێست.')
-                await asyncio.sleep(2) # بۆ ئەوەی تێلیگرام ڕێگری نەکات لە ناردنی خێرا
+                print(f'✅ قالبی {price_num} هەزار ڕێکخرایەوە و ناردرا.')
+                await asyncio.sleep(2)
                 
             except Exception as e:
-                print(f"❌ کێشە لە ناردنی قالبی {price_num}: {e}")
+                print(f"❌ کێشە لە قالبی {price_num}: {e}")
 
 if __name__ == '__main__':
     asyncio.run(main())
