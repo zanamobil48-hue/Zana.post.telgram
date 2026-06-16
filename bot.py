@@ -12,27 +12,14 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📍 لێرەدا پۆزیشنی ٣٥ بە تەواوی ڕێکخراوە بۆ ناو کەپسولە سوورەکەی سەرەوە
+# 📍 لێرەدا پۆزیشنی ٣٥ کەمێک براوەتە سەرەوە تا بە ڕێکی لە ناوەڕاستی کەپسولەکە جێگیر بێت
 BOXES = {
-    '15': (100, 190, 980, 330),
-    '20': (100, 190, 980, 330),
-    '25': (100, 190, 980, 330),
-    '30': (100, 190, 980, 330),
-    '35': (194, 151, 886, 259),  # 🎯 پێوانەی نوێ و ورد بۆ قالبی ٣٥ هەزار
-    '40': (100, 295, 980, 435),
-    '45': (100, 215, 980, 355),
-    '50': (100, 295, 980, 435),
-    '55': (100, 190, 980, 330),
-    '60': (100, 240, 980, 380),
-    '65': (100, 240, 980, 380),
-    '70': (100, 240, 980, 380),
-    '80': (100, 240, 980, 380),
-    '85': (100, 240, 980, 380),
-    '100': (100, 240, 980, 380),
+    '35': (194, 132, 886, 240),  # 🎯 شوێنی نوێ و بەرزکراوە بۆ قالبی ٣٥ هەزار
     'default': (100, 190, 980, 330)
 }
 
-PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '80', '85', '100']
+# لێرەدا تەنها ٣٥ دیاری کراوە بۆ ئەوەی بەس ئەم نرخە پۆست بکرێت
+PRICE_ORDER = ['35']
 
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
@@ -91,25 +78,9 @@ def create_image(phone, price_raw, out_path):
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
     
-    # 🎨 ڕەنگەکان
-    if price_num in ['15', '25', '35', '45']:
-        base_color = '#FFFFFF'     
-        special_color = '#FFEA00'  
-    elif price_num in ['20', '30']:
-        base_color = '#000000'     
-        special_color = '#E60000'  
-    elif price_num in ['40', '50']:
-        base_color = '#FFFFFF'     
-        special_color = '#FFFFFF'  
-    elif price_num in ['55']:
-        base_color = '#000000'     
-        special_color = '#000000'  
-    elif price_num in ['60', '65', '70', '80', '85', '100']:
-        base_color = '#E60000'     
-        special_color = '#000000'  
-    else:
-        base_color = '#000000'     
-        special_color = '#E60000'
+    # ڕەنگی سپی و زەرد بۆ قالبی ٣٥
+    base_color = '#FFFFFF'     
+    special_color = '#FFEA00'  
     
     draw_centered_mixed(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
         box[2] - box[0] - 20, box[3] - box[1] - 5, base_color, special_color, start=135)
@@ -118,7 +89,7 @@ def create_image(phone, price_raw, out_path):
 
 async def main():
     if not TELEGRAM_TOKEN or not GOOGLE_CREDS:
-        print("❌ کێشە لە سکرێتەکان هەیە!")
+        print("❌ کێشە لە ڕێکخستنی سکرێتەکان هەیە!")
         return
 
     try:
@@ -159,7 +130,7 @@ async def main():
                     create_image(phone, price, out)
                     keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
-                    caption_text = f"🧪 [تاقیکردنەوە]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
+                    caption_text = f"🧪 [تاقیکردنەوەی تایبەت بە ٣٥ هەزار]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
                     
                     await bot.send_photo(
                         chat_id=CHANNEL_ID, 
@@ -167,11 +138,10 @@ async def main():
                         caption=caption_text,
                         reply_markup=reply_markup
                     )
-                    print(f'✅ وێنەی نرخی {price_num} هەزار ناردرا.')
-                    await asyncio.sleep(3)
+                    print(f'✅ وێنەی ٣٥ هەزار بە سەرکەوتوویی ناردرا.')
                     
                 except Exception as e:
-                    print(f"❌ کێشە لە نرخی {price_num}: {e}")
+                    print(f"❌ کێشە لە پۆستی ٣٥ هەزار: {e}")
 
 if __name__ == '__main__':
     asyncio.run(main())
