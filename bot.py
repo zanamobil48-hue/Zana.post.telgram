@@ -12,14 +12,15 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📍 لێرەدا پۆزیشنی ٥٥ بە تەواوی ڕێکخراوە بۆ ناو کەپسولە سپییەکەی ناوەڕاست
+# 📍 لێرەدا پێوانەی هاوبەشی قالبەکانی ٦٠ و ٦٥ جێگیر کراوە لە ناو کەپسولە سپییەکەی سەرەوە
 BOXES = {
-    '55': (54, 315, 1026, 465),  # 🎯 پێوانەی دەقیق و سەنتەرکراو بۆ قالبی ٥٥ هەزار
+    '60': (105, 121, 975, 273),  # 🎯 پۆزیشنی دەقیق بۆ ناو کەپسولە سپییەکەی سەرەوە
+    '65': (105, 121, 975, 273),  # 🎯 هەمان پۆزیشنی هاوبەش
     'default': (100, 190, 980, 330)
 }
 
-# تەنها ٥٥ دیاری کراوە بۆ ئەوەی بەس ئەم جۆرە پۆست بکات
-PRICE_ORDER = ['55']
+# هەردوو نرخەکە لێرەدا دیاری کراون بۆ پۆستکردن پێکەوە
+PRICE_ORDER = ['60', '65']
 
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
@@ -78,9 +79,9 @@ def create_image(phone, price_raw, out_path):
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
     
-    # 🎨 ڕەنگی ڕەش و سوور بۆ ئەوەی لەسەر بۆشاییە سپییەکە بە نایابی و ڕوونی دەرکەوێت
-    base_color = '#000000'     # ڕەشی تۆخ بۆ سەرەتای ژمارەکە
-    special_color = '#E60000'  # سووری ئاسیاسێڵ بۆ ٤ دانەی کۆتایی
+    # 🎨 ڕەنگی ڕەش و سوور بۆ ئەوەی لەسەر بۆشاییە سپییەکە زۆر بە ڕوونی دەرکەوێت
+    base_color = '#000000'     
+    special_color = '#E60000'  
     
     draw_centered_mixed(draw, str(phone), 'NRT-Bd.ttf', cx1, cy1,
         box[2] - box[0] - 40, box[3] - box[1] - 5, base_color, special_color, start=135)
@@ -100,6 +101,7 @@ async def main():
         gc = gspread.authorize(creds)
         sheet = gc.open_by_key(SHEET_ID).sheet1
         data = sheet.get_all_values()
+        print(f"📊 داتا بە سەرکەوتوویی خوێندرایەوە. ژمارەی ڕیزەکان: {len(data)}")
     except Exception as e:
         print(f"❌ کێشە لە گوگل شێت: {e}")
         return
@@ -120,6 +122,12 @@ async def main():
         if price_num in PRICE_ORDER and price_num not in samples:
             samples[price_num] = (phone, price)
 
+    # ⚠️ ئەگەر نرخەکان لە گوگل شێت نەبوون، لێرە بە زۆر دایاندەنێین بۆ تێست
+    if '60' not in samples:
+        samples['60'] = ('0750 600 0000', '60000')
+    if '65' not in samples:
+        samples['65'] = ('0750 650 0000', '65000')
+
     async with Bot(token=TELEGRAM_TOKEN) as bot:
         for price_num in PRICE_ORDER:
             if price_num in samples:
@@ -130,7 +138,7 @@ async def main():
                     create_image(phone, price, out)
                     keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
-                    caption_text = f"🧪 [تاقیکردنەوەی تایبەت بە ٥٥ هەزار]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
+                    caption_text = f"🧪 [تاقیکردنەوەی قالبەکەت]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
                     
                     await bot.send_photo(
                         chat_id=CHANNEL_ID, 
@@ -138,10 +146,10 @@ async def main():
                         caption=caption_text,
                         reply_markup=reply_markup
                     )
-                    print(f'✅ وێنەی ٥٥ هەزار بە سەرکەوتوویی ناردرا.')
+                    print(f'✅ وێنەی {price_num} هەزار بە سەرکەوتوویی ناردرا بۆ تێست.')
                     
                 except Exception as e:
-                    print(f"❌ کێشە لە پۆستی ٥٥ هەزار: {e}")
+                    print(f"❌ کێشە لە پۆستی {price_num} هەزار: {e}")
 
 if __name__ == '__main__':
     asyncio.run(main())
