@@ -12,20 +12,17 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📍 ڕێکخستنی پۆزیشنی نووسینەکان بەپێی قەبارەی چوارگۆشەی هەر وێنەیەک
+# 📍 لێرەدا پۆزیشنی ٣٥ بە تەواوی ڕێکخراوە بۆ ناو کەپسولە سوورەکەی سەرەوە
 BOXES = {
     '15': (100, 190, 980, 330),
     '20': (100, 190, 980, 330),
     '25': (100, 190, 980, 330),
     '30': (100, 190, 980, 330),
-    # نرخەکانی 35 و 45 کەمێک هاتنە خوارەوە بۆ ئەوەی نەلکێن بە لێواری سەرەوە
-    '35': (100, 215, 980, 355),
-    '45': (100, 215, 980, 355),
-    # نرخەکانی 40 و 50 چوارگۆشەکەیان زۆر نزمە، بۆیە پۆزیشنەکەیان هێنرایە خوارەوە
+    '35': (194, 151, 886, 259),  # 🎯 پێوانەی نوێ و ورد بۆ قالبی ٣٥ هەزار
     '40': (100, 295, 980, 435),
+    '45': (100, 215, 980, 355),
     '50': (100, 295, 980, 435),
     '55': (100, 190, 980, 330),
-    # نرخەکانی 60 تا 100 پۆزیشنیان ڕێکخرا تا ڕێک بکەونە ناو چوارگۆشە سپییەکە
     '60': (100, 240, 980, 380),
     '65': (100, 240, 980, 380),
     '70': (100, 240, 980, 380),
@@ -94,22 +91,22 @@ def create_image(phone, price_raw, out_path):
     cx1 = (box[0] + box[2]) // 2
     cy1 = (box[1] + box[3]) // 2
     
-    # 🎨 نوێکردنەوەی ڕەنگەکان بەپێی مەرجە نوێیەکانت:
+    # 🎨 ڕەنگەکان
     if price_num in ['15', '25', '35', '45']:
-        base_color = '#FFFFFF'     # سپی
-        special_color = '#FFEA00'  # چوار ژمارەی کۆتایی زەرد
+        base_color = '#FFFFFF'     
+        special_color = '#FFEA00'  
     elif price_num in ['20', '30']:
-        base_color = '#000000'     # ڕەش
-        special_color = '#E60000'  # چوار ژمارەی کۆتایی سوور
+        base_color = '#000000'     
+        special_color = '#E60000'  
     elif price_num in ['40', '50']:
-        base_color = '#FFFFFF'     # هەمووی سپی
+        base_color = '#FFFFFF'     
         special_color = '#FFFFFF'  
     elif price_num in ['55']:
-        base_color = '#000000'     # هەمووی ڕەش
+        base_color = '#000000'     
         special_color = '#000000'  
     elif price_num in ['60', '65', '70', '80', '85', '100']:
-        base_color = '#E60000'     # سەرەتا سوور
-        special_color = '#000000'  # چوار ژمارەی کۆتایی ڕەش
+        base_color = '#E60000'     
+        special_color = '#000000'  
     else:
         base_color = '#000000'     
         special_color = '#E60000'
@@ -144,7 +141,6 @@ async def main():
             if p1 and p2 and p1 != 'نۆرمال' and p1 != 'مۆبایل' and p2 != 'نرخ':
                 raw_rows.append((p1, p2))
 
-    # دۆزینەوەی نموونەکان بۆ تاقیکردنەوەی گشتی
     samples = {}
     for phone, price in raw_rows:
         price_clean = format_price(price)
@@ -152,8 +148,6 @@ async def main():
         price_num = words[0] if words else 'default'
         if price_num in PRICE_ORDER and price_num not in samples:
             samples[price_num] = (phone, price)
-
-    print(f"🔄 ناردنی {len(samples)} پۆستی نوێی تاقیکردنەوە بە پۆزیشن و ڕەنگی نوێوە...")
 
     async with Bot(token=TELEGRAM_TOKEN) as bot:
         for price_num in PRICE_ORDER:
@@ -163,10 +157,9 @@ async def main():
                 
                 try:
                     create_image(phone, price, out)
-                    
                     keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
                     reply_markup = InlineKeyboardMarkup(keyboard)
-                    caption_text = f"🧪 [پۆستی تاقیکردنەوەی نوێ]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
+                    caption_text = f"🧪 [تاقیکردنەوە]\n📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
                     
                     await bot.send_photo(
                         chat_id=CHANNEL_ID, 
@@ -174,13 +167,11 @@ async def main():
                         caption=caption_text,
                         reply_markup=reply_markup
                     )
-                    print(f'✅ وێنەی نرخی {price_num} هەزار بە سەرکەوتوویی ناردرا.')
+                    print(f'✅ وێنەی نرخی {price_num} هەزار ناردرا.')
                     await asyncio.sleep(3)
                     
                 except Exception as e:
                     print(f"❌ کێشە لە نرخی {price_num}: {e}")
-                    
-    print("✨ تاقیکردنەوەی نوێ بە سەرکەوتوویی تەواو بوو!")
 
 if __name__ == '__main__':
     asyncio.run(main())
