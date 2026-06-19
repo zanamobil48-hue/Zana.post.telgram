@@ -12,17 +12,17 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📊 ڕێکخستنی وردی گشت قاڵب، بۆکس و ڕەنگەکان (١٥ تا ١٠٠ هەزار)
+# 📊 ڕێکخستنی نوێ و دەقاوودەقی بۆکسەکان بۆ ڕێگری لە دەرچوونی دەق
 CONFIGS = {
     '15': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '20': {'box': (100, 190, 980, 330), 'base': '#A30000', 'special': '#A30000'},
     '25': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '30': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#000000'},
-    # 🎯 چاککردنی قاڵبی ٣٥ و ٤٥ بۆ ئەوەی لە ناو بۆکسە سوورەکەی سەرەوە دەرنەچێت
-    '35': {'box': (115, 125, 965, 235), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    # 🎯 لێرەدا بۆکسی ٣٥ و ٤٥ کورتکراوەتەوە تا فۆنتەکە کەمێک بچووک بێت و لە هێڵەکان دەرنەچێت
+    '35': {'box': (140, 145, 940, 230), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '40': {'box': (54, 290, 1026, 430), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '45': {'box': (115, 125, 965, 235), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    # 🎯 قالبەکانی کەپسولی سپی (٥٠ تا ١٠٠) کە ڕەنگی سوور و ڕەشی تێکەڵاو وەردەگرن
+    '45': {'box': (140, 145, 940, 230), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    # قالبەکانی کەپسولی سپی (٥٠ تا ١٠٠)
     '50': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '55': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '60': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
@@ -34,7 +34,6 @@ CONFIGS = {
     'default': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#000000'}
 }
 
-# تەواوی نرخەکان بەپێی فۆڵدەرەکەی گیتهەب و بەبێ بازدان لە هیچ نرخێک
 PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '80', '85', '100']
 
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
@@ -132,39 +131,4 @@ async def main():
 
     samples = {}
     for phone, price in raw_rows:
-        price_clean = format_price(price)
-        words = price_clean.split()
-        price_num = words[0] if words else 'default'
-        if price_num in PRICE_ORDER and price_num not in samples:
-            samples[price_num] = (phone, price)
-
-    async with Bot(token=TELEGRAM_TOKEN) as bot:
-        for price_num in PRICE_ORDER:
-            if price_num in samples:
-                phone, price = samples[price_num]
-                out = f'test_{price_num}.jpg'
-                
-                try:
-                    create_image(phone, price, out)
-                    keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
-                    reply_markup = InlineKeyboardMarkup(keyboard)
-                    caption_text = f"📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
-                    
-                    await bot.send_photo(
-                        chat_id=CHANNEL_ID, 
-                        photo=open(out, 'rb'),
-                        caption=caption_text,
-                        reply_markup=reply_markup
-                    )
-                    print(f'✅ وێنەی {price_num} هەزار بە سەرکەوتوویی ناردرا.')
-                    
-                    if os.path.exists(out):
-                        os.remove(out)
-                        
-                    await asyncio.sleep(2)
-                    
-                except Exception as e:
-                    print(f"❌ کێشە لە پۆستی {price_num} هەزار: {e}")
-
-if __name__ == '__main__':
-    asyncio.run(main())
+        price_
