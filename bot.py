@@ -11,22 +11,30 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
+# 📊 ڕێکخستنی نوێ و دەقاوودەقی بۆکسەکان بەپێی جۆری قالبەکان
 CONFIGS = {
     '15': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '20': {'box': (100, 190, 980, 330), 'base': '#A30000', 'special': '#A30000'},
     '25': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '30': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#000000'},
     '35': {'box': (140, 145, 940, 230), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '40': {'box': (54, 290, 1026, 430), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '45': {'box': (140, 145, 940, 230), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '50': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
-    '55': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
-    '60': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
-    '65': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
-    '70': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
-    '80': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
-    '85': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
-    '100': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    
+    # 🎯 قالبەکانی ٤٠، ٥٠، ٥٥ (کەپسولەکە هاتووەتە خوارەوە بۆ ناوەڕاست)
+    '40': {'box': (50, 280, 1030, 425), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    '50': {'box': (50, 280, 1030, 425), 'base': '#E60000', 'special': '#000000'},
+    '55': {'box': (50, 280, 1030, 425), 'base': '#E60000', 'special': '#000000'},
+    
+    # 🎯 قالبەکانی ٦٠ و ٦٥ (کەپسولەکە لە سەرەوەیە)
+    '60': {'box': (105, 105, 975, 250), 'base': '#E60000', 'special': '#000000'},
+    '65': {'box': (105, 105, 975, 250), 'base': '#E60000', 'special': '#000000'},
+    
+    # 🎯 قالبەکانی ٧٠، ٨٠، ٨٥، ١٠٠ (کەپسولەکە لەژێر لۆگۆی سوور دایە)
+    '70': {'box': (105, 130, 975, 275), 'base': '#E60000', 'special': '#000000'},
+    '80': {'box': (105, 130, 975, 275), 'base': '#E60000', 'special': '#000000'},
+    '85': {'box': (105, 130, 975, 275), 'base': '#E60000', 'special': '#000000'},
+    '100': {'box': (105, 130, 975, 275), 'base': '#E60000', 'special': '#000000'},
+    
     'default': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#000000'}
 }
 
@@ -90,11 +98,10 @@ def create_image(phone, price_raw, out_path):
     img.save(out_path, 'JPEG', quality=95)
 
 async def main():
-    # 🎯 ئەگەر سکرێتەکان نەخرابێتنە ناو ئەکشن، لێرەدا کۆدەکە ڕادەوەستێت و خەتای دەقاوودەق دەدات
     if not TELEGRAM_TOKEN:
-        raise ValueError("❌ کێشە: TELEGRAM_TOKEN لە سێتیپی گیتهەب پێناسە نەکراوە!")
+        raise ValueError("❌ کێشە: TELEGRAM_TOKEN پێناسە نەکراوە!")
     if not GOOGLE_CREDS:
-        raise ValueError("❌ کێشە: GOOGLE_CREDS لە سێتیپی گیتهەب پێناسە نەکراوە!")
+        raise ValueError("❌ کێشە: GOOGLE_CREDS پێناسە نەکراوە!")
 
     try:
         creds_json = json.loads(GOOGLE_CREDS)
@@ -125,9 +132,6 @@ async def main():
             samples[price_num] = (phone, price)
 
     print(f"🔎 پۆستە دۆزراوەکان بۆ تاقیکردنەوە: {list(samples.keys())}")
-
-    if not samples:
-        print("⚠️ ئاگاداری: هیچ نرخێک لە گوگل شێتەکە نەدۆزرایەوە کە بگونجێت لەگەڵ لیستەکە!")
 
     async with Bot(token=TELEGRAM_TOKEN) as bot:
         for price_num in PRICE_ORDER:
