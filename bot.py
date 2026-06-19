@@ -12,17 +12,19 @@ REPO = os.environ.get('GITHUB_REPOSITORY', '')
 CHANNEL_ID = '@zanatest123'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
-# 📊 ڕێکخستنی گشت قاڵب، بۆکس و ڕەنگەکان (١٥ تا ١٠٠ هەزار) بەپێی وێنەکانت
+# 📊 ڕێکخستنی وردی گشت قاڵب، بۆکس و ڕەنگەکان (١٥ تا ١٠٠ هەزار)
 CONFIGS = {
     '15': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '20': {'box': (100, 190, 980, 330), 'base': '#A30000', 'special': '#A30000'},
     '25': {'box': (100, 190, 980, 330), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '30': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#000000'},
-    '35': {'box': (105, 121, 975, 273), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    # 🎯 چاککردنی قاڵبی ٣٥ و ٤٥ بۆ ئەوەی لە ناو بۆکسە سوورەکەی سەرەوە دەرنەچێت
+    '35': {'box': (115, 125, 965, 235), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '40': {'box': (54, 290, 1026, 430), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '45': {'box': (105, 121, 975, 273), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    '55': {'box': (54, 290, 1026, 430), 'base': '#FFFFFF', 'special': '#FFFFFF'},
-    # قالبەکانی کەپسولی سپی (٦٠ تا ١٠٠) کە ڕەنگی تێکەڵاو (سوور و ڕەش) وەردەگرن
+    '45': {'box': (115, 125, 965, 235), 'base': '#FFFFFF', 'special': '#FFFFFF'},
+    # 🎯 قالبەکانی کەپسولی سپی (٥٠ تا ١٠٠) کە ڕەنگی سوور و ڕەشی تێکەڵاو وەردەگرن
+    '50': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
+    '55': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '60': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '65': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
     '70': {'box': (105, 150, 965, 285), 'base': '#E60000', 'special': '#000000'},
@@ -32,8 +34,8 @@ CONFIGS = {
     'default': {'box': (100, 190, 980, 330), 'base': '#000000', 'special': '#000000'}
 }
 
-# گشتاندنی تەواوی نرخەکان لە ١٥ تا ١٠٠ هەزار بۆ پۆستکردن پێکەوە
-PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '55', '60', '65', '70', '80', '85', '100']
+# تەواوی نرخەکان بەپێی فۆڵدەرەکەی گیتهەب و بەبێ بازدان لە هیچ نرخێک
+PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '80', '85', '100']
 
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
@@ -89,7 +91,6 @@ def create_image(phone, price_raw, out_path):
         
     draw = ImageDraw.Draw(img)
     
-    # بەدەستهێنانی ڕێکخستنی تایبەت بە هەر نرخێک بە شێوەی ئۆتۆماتیکی
     cfg = CONFIGS.get(price_num, CONFIGS['default'])
     box = cfg['box']
     base_color = cfg['base']
@@ -137,7 +138,6 @@ async def main():
         if price_num in PRICE_ORDER and price_num not in samples:
             samples[price_num] = (phone, price)
 
-    # 🔄 پۆستکردنی ڕاستەوخۆی داتاکانی ناو شێتەکە لە ١٥ تا ١٠٠ هەزار
     async with Bot(token=TELEGRAM_TOKEN) as bot:
         for price_num in PRICE_ORDER:
             if price_num in samples:
@@ -161,7 +161,7 @@ async def main():
                     if os.path.exists(out):
                         os.remove(out)
                         
-                    await asyncio.sleep(2) # بۆ ئەوەی تێلێگرام بلۆکمان نەکات
+                    await asyncio.sleep(2)
                     
                 except Exception as e:
                     print(f"❌ کێشە لە پۆستی {price_num} هەزار: {e}")
