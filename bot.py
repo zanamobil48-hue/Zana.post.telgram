@@ -1,4 +1,5 @@
-import asyncio, os, gspread, json, requests, re, sys
+import asyncio, os, gspread, json, requests, re, sys, random
+from datetime import datetime, timezone, timedelta
 from PIL import Image, ImageDraw, ImageFont
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from google.oauth2.service_account import Credentials
@@ -23,11 +24,9 @@ CONFIGS = {
     '50': {'box': (50, 315, 1030, 460), 'base': '#FFFFFF', 'special': '#FFFFFF'},
     '55': {'box': (50, 315, 1030, 460), 'base': '#E60000', 'special': '#000000'},
     
-    # 🎯 ٦٠ و ٦٥ وەک خۆی هێڵدرایەوە بەپێی داواکاریت
     '60': {'box': (105, 125, 975, 270), 'base': '#E60000', 'special': '#000000'},
     '65': {'box': (105, 125, 975, 270), 'base': '#E60000', 'special': '#000000'},
     
-    # 🎯 ٧٠ بۆ ١٠٠ کەمێک هێنرایە خوارەوە بۆ ئەوەی ڕێک بکەوێتە ناوەڕاست
     '70': {'box': (105, 140, 975, 285), 'base': '#E60000', 'special': '#000000'},
     '80': {'box': (105, 140, 975, 285), 'base': '#E60000', 'special': '#000000'},
     '85': {'box': (105, 140, 975, 285), 'base': '#E60000', 'special': '#000000'},
@@ -37,6 +36,7 @@ CONFIGS = {
 }
 
 PRICE_ORDER = ['15', '20', '25', '30', '35', '40', '45', '50', '55', '60', '65', '70', '80', '85', '100']
+POST_HOURS = [15, 16, 17, 18, 19]
 
 def draw_centered_mixed(draw, text, font_path, cx, cy, max_w, max_h, base_color, special_color, start=135):
     digit_count = 0
@@ -99,57 +99,86 @@ async def main():
     if not TELEGRAM_TOKEN or not GOOGLE_CREDS:
         raise ValueError("❌ کێشە لە سکرێتەکان هەیە!")
 
+    tz_iraq = timezone(timedelta(hours=3))
+    now = datetime.now(tz_iraq)
+    current_hour = now.hour
+
+    if current_hour not in POST_HOURS:
+        print(f"⏳ ئێستا کاتژمێر {current_hour}:00ـە بە کاتی عێراق. کاتی پۆستکردن نییە.")
+        return
+
+    cycle_day = now.date().toordinal() % 3
+    hour_index = POST_HOURS.index(current_hour)
+    
+    price_index = (cycle_day * 5) + hour_index
+    price_to_post = PRICE_ORDER[price_index]
+
+    print(f"⏰ کاتی پۆستکردنە! سوڕی ڕۆژی {cycle_day + 1}، کاتژمێر {current_hour}:00، پۆستی {price_to_post} هەزاری دەکرێت.")
+
     try:
         creds_json = json.loads(GOOGLE_CREDS)
+        # مۆڵەتی دەستکاری کردنی شیتەکە دراوە بە بۆتەکە لێرەدا
         creds = Credentials.from_service_account_info(creds_json,
-            scopes=['https://www.googleapis.com/auth/spreadsheets.readonly',
-                    'https://www.googleapis.com/auth/drive.readonly'])
+            scopes=['https://www.googleapis.com/auth/spreadsheets',
+                    'https://www.googleapis.com/auth/drive'])
         gc = gspread.authorize(creds)
         sheet = gc.open_by_key(SHEET_ID).sheet1
         data = sheet.get_all_values()
-        print(f"📊 داتا خوێندرایەوە. ژمارەی ڕیزەکان: {len(data)}")
+        print("📊 داتا خوێندرایەوە.")
     except Exception as e:
         raise RuntimeError(f"❌ کێشە لە پەیوەندی گوگل شێت: {e}")
 
-    raw_rows = []
-    for r in data:
+    all_matches = []
+    
+    for i, r in enumerate(data):
+        row_num = i + 1  # ژمارەی ڕیزەکە لەناو شیتەکەدا
+        
+        # پشکنین بۆ ئەوەی بزانین ئایا نیشانەی ✅ ی هەیە یان نا (لە کۆڵۆمی سێیەم)
+        status = str(r[2]).strip() if len(r) > 2 else ""
+        if status == '✅':
+            continue  # ئەگەر پۆست کرابوو پێشتر، باز دەدات بەسەریدا
+            
         if len(r) >= 2:
             p1 = str(r[0]).strip()
             p2 = str(r[1]).strip()
             if p1 and p2 and p1 != 'نۆرمال' and p1 != 'مۆبایل' and p2 != 'نرخ':
-                raw_rows.append((p1, p2))
-
-    samples = {}
-    for phone, price in raw_rows:
-        price_clean = format_price(price)
-        words = price_clean.split()
-        price_num = words[0] if words else 'default'
-        if price_num in PRICE_ORDER and price_num not in samples:
-            samples[price_num] = (phone, price)
+                price_clean = format_price(p2)
+                words = price_clean.split()
+                price_num = words[0] if words else 'default'
+                
+                # تەنها ئەوانە هەڵدەگرێت کە مەرجەکانیان تێدایە و نیشانەی ✅ یان نییە
+                if price_num == price_to_post:
+                    all_matches.append((p1, p2, row_num))
 
     async with Bot(token=TELEGRAM_TOKEN) as bot:
-        for price_num in PRICE_ORDER:
-            if price_num in samples:
-                phone, price = samples[price_num]
-                out = f'test_{price_num}.jpg'
-                try:
-                    create_image(phone, price, out)
-                    keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
-                    reply_markup = InlineKeyboardMarkup(keyboard)
-                    caption_text = f"📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
-                    
-                    await bot.send_photo(
-                        chat_id=CHANNEL_ID, 
-                        photo=open(out, 'rb'),
-                        caption=caption_text,
-                        reply_markup=reply_markup
-                    )
-                    print(f'✅ وێنەی {price_num} هەزار ناردرا.')
-                    if os.path.exists(out):
-                        os.remove(out)
-                    await asyncio.sleep(2)
-                except Exception as e:
-                    print(f"❌ کێشە لە پۆستکردنی {price_num}: {e}")
+        if all_matches:
+            # یەکێک بە هەڕەمەکی لەو ژمارە نوێیانە هەڵدەبژێرێت
+            phone, price, row_num = random.choice(all_matches)
+            out = f'test_{price_to_post}.jpg'
+            
+            try:
+                create_image(phone, price, out)
+                keyboard = [[InlineKeyboardButton("بۆ کڕین نامە بنێرە 🛒", url="https://t.me/zanamobil")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                caption_text = f"📱 مۆبایل: \u200E{phone}\u200E\n💰 نرخ: {format_price(price)}"
+                
+                await bot.send_photo(
+                    chat_id=CHANNEL_ID, 
+                    photo=open(out, 'rb'),
+                    caption=caption_text,
+                    reply_markup=reply_markup
+                )
+                
+                # لێرەدا نیشانەی ✅ لە ڕیزی سێیەمی گۆگڵ شیتەکە دەدات
+                sheet.update_cell(row_num, 3, '✅')
+                
+                print(f'✅ وێنەی {price_to_post} هەزار ناردرا و نیشانە کرا (ژمارە: {phone}).')
+                if os.path.exists(out):
+                    os.remove(out)
+            except Exception as e:
+                print(f"❌ کێشە لە پۆستکردنی {price_to_post}: {e}")
+        else:
+            print(f"⚠️ هۆشداری: هیچ ژمارەیەکی نوێ بۆ {price_to_post} هەزاری نەماوە (هەمووی نیشانەی ✅ ی هەیە یان بوونی نییە).")
 
 if __name__ == '__main__':
     asyncio.run(main())
