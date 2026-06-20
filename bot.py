@@ -9,7 +9,7 @@ GOOGLE_CREDS = os.environ.get('GOOGLE_CREDS', '')
 PAT_TOKEN = os.environ.get('PAT_TOKEN', '')
 REPO = os.environ.get('GITHUB_REPOSITORY', '')
 
-CHANNEL_ID = '@zanatest123'
+CHANNEL_ID = '@zanamobile1'
 SHEET_ID = '1RkGwtLZfZ_DaScAnFH9zKdDuAtO90NjZLCxTRBSdJNU'
 
 CONFIGS = {
